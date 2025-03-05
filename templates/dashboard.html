@@ -7,6 +7,10 @@
     <div class="dashboard-header">
         <h2>{{ dashboard.name }}</h2>
         <div class="dashboard-actions">
+            <!-- 新增总结按钮 -->
+            <button class="btn btn-info" onclick="showSummaryModal({{ dashboard.id }})">
+                <i class="fas fa-chart-pie"></i> Generate report
+            </button>
             <div class="search-container">
                 <input type="text" id="taskSearch" placeholder="Search tasks..." onkeyup="searchTasks(this.value)">
                 <i class="fas fa-search"></i>
@@ -17,6 +21,26 @@
         </div>
     </div>
 
+    <!-- 新增总结弹窗 -->
+    <div id="summaryModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSummaryModal()">&times;</span>
+            <h3 id="summaryTitle">Kanban analysis report</h3>
+            <div class="summary-content">
+                <div id="loading" class="loading" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i> generating report...
+                </div>
+                <div id="summaryText" class="summary-text"></div>
+                <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSummaryModal()">Close</button>
+                <button class="btn btn-primary" onclick="saveSummary()">
+                    <i class="fas fa-save"></i> Save
+                </button>
+            </div>
+        </div>
+    </div>
     <div class="board-container" id="boardContainer">
         {% for column in dashboard.columns|sort(attribute='position') %}
         <div class="column" data-column-id="{{ column.id }}">
@@ -137,7 +161,11 @@ function drop(ev) {
         }).then(response => {
             if (response.ok) {
                 targetColumn.insertBefore(taskElement, targetColumn.lastElementChild);
+            } else {
+                console.error("Failed to update task position.");
             }
+        }).catch(error => {
+            console.error("Error updating task position:", error);
         });
     }
 }
@@ -197,11 +225,15 @@ function showEditTaskModal(taskId) {
             document.getElementById('taskDescription').value = task.description;
             document.getElementById('taskDueDate').value = task.due_date;
             modal.style.display = 'block';
-        });
+        })
+        .catch(error => console.error("Error fetching task:", error));
 }
 
 function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
+    if(modalId === 'taskModal'){
+        document.getElementById('taskForm').reset();
+    }
 }
 
 function makeEditable(element) {
@@ -240,9 +272,7 @@ function updateColumnTitle(columnId, newTitle) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            title: newTitle
-        })
+        body: JSON.stringify({ title: newTitle })
     }).then(response => {
         if (!response.ok) {
             if (response.status === 403) {
@@ -291,9 +321,7 @@ document.getElementById('newColumnForm').onsubmit = function(e) {
     
     fetch('/api/column/new', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             title: title,
             position: position,
@@ -330,9 +358,7 @@ document.getElementById('taskForm').onsubmit = function(e) {
     
     fetch(endpoint, {
         method: method,
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestData)
     })
     .then(response => {
@@ -377,8 +403,105 @@ function showFlashMessage(message, type) {
         flashContainer.remove();
     }, 3000);
 }
+
+// 新增总结功能函数
+let currentDashboardId = null;
+
+function showSummaryModal(dashboardId) {
+    currentDashboardId = dashboardId;
+    document.getElementById('summaryModal').style.display = 'block';
+    loadSummary(dashboardId);
+}
+
+function closeSummaryModal() {
+    document.getElementById('summaryModal').style.display = 'none';
+    clearSummaryContent();
+}
+
+function clearSummaryContent() {
+    document.getElementById('summaryText').innerHTML = '';
+    document.getElementById('errorMessage').style.display = 'none';
+}
+
+function loadSummary(dashboardId) {
+    const loading = document.getElementById('loading');
+    const errorMessage = document.getElementById('errorMessage');
+    
+    loading.style.display = 'block';
+    errorMessage.style.display = 'none';
+    
+    fetch(`/generate_summary/${dashboardId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(errData => {
+                throw new Error(errData.message || `HTTP error! status: ${response.status}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            document.getElementById('summaryText').innerHTML = data.summary.replace(/\n/g, '<br>');
+        } else {
+            showError(data.message || '生成报告失败');
+        }
+    })
+    .catch(error => {
+        showError(error.message);
+    })
+    .finally(() => {
+        loading.style.display = 'none';
+    });
+}
+
+function showError(message) {
+    const errorMessage = document.getElementById('errorMessage');
+    errorMessage.innerHTML = `错误：${message}`;
+    errorMessage.style.display = 'block';
+}
+
+function saveSummary() {
+    if (!currentDashboardId) return;
+    
+    fetch(`/save_summary/${currentDashboardId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => {
+        if (response.ok) {
+            alert('报告保存成功！');
+            closeSummaryModal();
+        } else {
+            response.json().then(data => {
+                showError(data.message || '保存报告失败');
+            });
+        }
+    })
+    .catch(error => {
+        showError(error.message);
+    });
+}
+
+// 修改看板卡片添加按钮
+document.querySelectorAll('.dashboard-card').forEach(card => {
+    const actions = card.querySelector('.dashboard-actions');
+    const summaryBtn = document.createElement('button');
+    summaryBtn.className = 'btn btn-info';
+    summaryBtn.innerHTML = '<i class="fas fa-chart-pie"></i> 总结';
+    summaryBtn.onclick = () => showSummaryModal(card.dataset.dashboardId);
+    
+    // 添加data属性存储dashboard ID
+    card.dataset.dashboardId = '{{ dashboard.id }}';
+    
+    // 插入到删除按钮前
+    actions.insertBefore(summaryBtn, actions.querySelector('.btn-danger'));
+});
 </script>
 {% endblock %}
+
 
 <style>
 .theme-customizer {
@@ -417,5 +540,45 @@ function showFlashMessage(message, type) {
     border: 1px solid var(--primary-color);
     border-radius: 4px;
     min-height: 100px;
+}
+.btn-info {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+    margin-right: 10px;
+}
+
+.btn-info:hover {
+    background-color: #138496;
+    border-color: #117a8b;
+}
+
+.summary-content {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin: 10px 0;
+    background-color: #f8f9fa;
+}
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-size: 1.2em;
+}
+
+.summary-text {
+    white-space: pre-wrap;
+    line-height: 1.6;
+    font-size: 16px;
+}
+
+.modal-footer {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+    text-align: right;
 }
 </style> 

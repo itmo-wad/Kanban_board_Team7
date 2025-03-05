@@ -51,8 +51,17 @@ class Task(db.Model):
     description = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     due_date = db.Column(db.DateTime)
-    column_id = db.Column(db.Integer, db.ForeignKey('column.id'), nullable=False)
+    column_id = db.Column(db.Integer, db.ForeignKey('column.id'))
     position = db.Column(db.Integer, nullable=False)
+    ai_summary = db.Column(db.Text)
+
+
+class SummaryHistory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable = False)
+    create_at = db.Column(db.DateTime, default = datetime.utcnow)
+    dashboard_id = db.Column(db.Integer, db.ForeignKey('dashboard.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 @login_manager.user_loader
 def load_user(user_id):
