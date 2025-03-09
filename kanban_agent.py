@@ -19,7 +19,7 @@ class KanbanAgent:
     def _init_llm(self):
         return ChatOpenAI(
             model="qwen-plus",
-            api_key= "sk-d55a252e6e0a423895317ec6bb519bbb",
+            api_key= os.environ.get("'qwen"),
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
             temperature=0.7
         )
@@ -42,12 +42,6 @@ class KanbanAgent:
             })
         
         return structured_data
-
-    # def _is_urgent(self, task):
-    #     if task.due_date:
-    #         delta = task.due_date - datetime.utcnow()
-    #         return 0 < delta.days <= 3
-    #     return False
 
 
     def generate_summary(self):
