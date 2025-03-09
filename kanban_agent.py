@@ -19,7 +19,7 @@ class KanbanAgent:
     def _init_llm(self):
         return ChatOpenAI(
             model="qwen-plus",
-            api_key=os.environ("qwen"),
+            api_key= "sk-d55a252e6e0a423895317ec6bb519bbb",
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
             temperature=0.7
         )
@@ -38,7 +38,7 @@ class KanbanAgent:
             
             structured_data.append({
                 "key": f"【{col.title}】",
-                "value": "\n".join([f"{k}: {v}" for k, v in col_summary.items()])
+                "value": "\n".join([f"{v}" for _, v in col_summary.items()])
             })
         
         return structured_data
@@ -84,18 +84,3 @@ class KanbanAgent:
 
         response = safe_predict(self.llm, prompt)
         return response
-    
-#  openai = ChatOpenAI(
-#     model = "moonshot-v1-8k",
-#     api_key = "sk-34VTTPEEjhfH7Ej2c99E1Il644amlZqcbuLE5EhQlgPe0OLi",
-#     base_url = "https://api.moonshot.cn/v1",
-# )
-
-# memory = ConversationSummaryMemory(llm=openai)
-# data = __get_keyvalue()
-# for kv in struc:
-#     memory.save_context(
-#         {"input":kv['key']},
-#         {"output":kv['value']}
-#     )
-# print(memory.buffer)
