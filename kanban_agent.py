@@ -18,33 +18,38 @@ class KanbanAgent:
         
     def _init_llm(self):
         return ChatOpenAI(
-            model="qwen-plus",
-            api_key= os.environ.get("'qwen"),
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-            temperature=0.7
+            model = "qwen-plus",
+            api_key = os.environ.get('qwen'),
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
         )
     
     def __get_keyvalue(self):
         columns = Column.query.filter_by(dashboard_id = self.dashboard_id).all()
         structured_data = []
         for col in columns:
-            tasks = Task.query.filter_by(column_id=col.id).all()
+            tasks = Task.query.filter_by(column_id=col.id).order_by(Task.created_at).all()
+            current_time = datetime.now()
+            task_list = [f"{t.title} - created {(current_time - t.created_at).days} days" for t in tasks]
+            
+            urgent_tasks = [f" {t.title} --- remind {(t.due_date - current_time).days} days" for t in tasks if t.due_date and (t.due_date - current_time).days <= 3]
 
             col_summary = {
                 "Total tasks": len(tasks),
-                "Tasks": [t.title for t in tasks[:2]],
-                # "Urgent Tasks": sum(1 for t in tasks if self._is_urgent(t)),
+                "Tasks": "\n".join(task_list),
+                "Urgent Tasks": "\n".join(urgent_tasks) if urgent_tasks else "None" 
             }
             
             structured_data.append({
                 "key": f"【{col.title}】",
-                "value": "\n".join([f"{v}" for _, v in col_summary.items()])
+                "value": "\n".join([f"{k}: {v}" for k, v in col_summary.items()])
             })
         
         return structured_data
 
 
+
     def generate_summary(self):
+        self.memory.clear()
         kvdata = self.__get_keyvalue()
 
         for kv in kvdata:
@@ -53,6 +58,7 @@ class KanbanAgent:
                 {"output":kv["value"]},
             )
         prompt_template = """
+            You are an excellent summarizing assistant and you can summarize the current task in great detail and well.
             [Base on the kanban data analysis the report]:
             {history}
 
