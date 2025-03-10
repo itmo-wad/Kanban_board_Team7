@@ -307,3 +307,33 @@ def generate_summary(dashboard_id):
         
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+    
+
+
+@app.route('/save_summary/<int:dashboard_id>', methods=['POST'])
+@login_required
+def save_summary(dashboard_id):
+    try:
+        dashboard = Dashboard.query.filter_by(
+            id=dashboard_id,
+            user_id=current_user.id
+        ).first_or_404()
+
+        # 获取最新生成的总结
+        latest_summary = SummaryHistory.query.filter_by(
+            dashboard_id=dashboard_id
+        ).order_by(SummaryHistory.create_at.desc()).first()
+
+        if not latest_summary:
+            return jsonify({"status": "error", "message": "未找到可保存的报告"}), 404
+
+        # 标记为已保存（可根据需要扩展字段）
+        latest_summary.is_saved = True
+        db.session.commit()
+
+        return jsonify({"status": "success"})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    
