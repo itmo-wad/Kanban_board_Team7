@@ -108,6 +108,9 @@ Open your web browser and navigate to:
 ```bash
 http://localhost:5001
 ```
+![image](https://github.com/user-attachments/assets/fd503d68-531e-47b9-8374-97a3075eb57c)
+![image](https://github.com/user-attachments/assets/f8264c75-702c-41b1-8ac4-2307c1c33e4c)
+
 
 
 
