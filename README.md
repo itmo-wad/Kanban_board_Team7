@@ -80,6 +80,11 @@ A full-featured Kanban board application built with Flask, SQLite, and modern we
    ```
 ## Running the Docker image
 
+### Requirements
+
+- **Docker:** Ensure Docker is installed on your machine.
+- **Internet Connection:** Required to pull the image from Docker Hub.
+  
 ### 1. Pull the Image from Docker Hub
 Run the following command to pull the Docker image:
 ```bash
