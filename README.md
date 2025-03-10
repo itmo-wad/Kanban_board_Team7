@@ -76,8 +76,37 @@ A full-featured Kanban board application built with Flask, SQLite, and modern we
 
 2. Open your web browser and navigate to:
    ```
-   http://localhost:5000
+   http://localhost:5001
    ```
+## Running the Docker image
+
+### 1. Pull the Image from Docker Hub
+Run the following command to pull the Docker image:
+```bash
+docker pull motteemb/kanban_board_team_7_app:latest
+```
+
+### 2. Run the Container
+After pulling the image, run the container using this command:
+```bash
+sudo docker run motteemb/kanban_board_team_7_app
+```
+
+### 3. Verify the Running Container
+Check that the container is running by executing:
+```bash
+docker ps
+```
+
+### 4. Access the Application
+Open your web browser and navigate to:
+```bash
+http://localhost:5001
+```
+
+
+
+
 
 ## Project Structure
 
